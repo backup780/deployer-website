@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GitHub Pages Deployer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2128;
+      --border: #30363d;
+      --purple: #a371f7;
+      --purple-dim: #8957e5;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --success: #3fb950;
+      --error: #f85149;
+      --warning: #d29922;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+    header { text-align: center; margin-bottom: 2.5rem; }
+    .logo { display: inline-flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+    }
+    h1 { font-size: 1.5rem; font-weight: 700; color: #fff; }
+    .tagline { color: var(--muted); font-size: 0.875rem; margin-top: 0.3rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%; max-width: 720px;
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-size: 0.72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--purple); margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--muted); margin-bottom: 0.35rem; }
+    input[type="text"], input[type="password"] {
+      width: 100%; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); font-size: 0.875rem;
+      padding: 0.6rem 0.9rem; outline: none;
+      transition: border-color 0.15s;
+      font-family: var(--font-mono);
+    }
+    input[type="text"]:focus, input[type="password"]:focus { border-color: var(--purple); }
+    .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .input-hint { font-size: 0.73rem; color: var(--muted); margin-top: 0.3rem; }
+    .input-hint a { color: var(--purple); text-decoration: none; }
+    .input-hint a:hover { text-decoration: underline; }
+
+    .field { margin-bottom: 1rem; }
+    .field:last-child { margin-bottom: 0; }
+
+    .token-wrap { position: relative; }
+    .token-wrap input { padding-right: 2.5rem; }
+    .btn-eye {
+      position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem;
+    }
+
+    /* Tab Switcher */
+    .tab-bar {
+      display: flex; gap: 0.5rem; margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;
+    }
+    .tab-btn {
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); font-size: 0.8rem; font-weight: 500;
+      padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active { background: var(--purple); border-color: var(--purple); color: #fff; font-weight: 700; }
+    .tab-btn:not(.active):hover { border-color: var(--purple); color: var(--purple); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Editor */
+    .editor-wrap {
+      border: 1px solid var(--border); border-radius: 8px;
+      overflow: hidden; background: var(--surface2);
+    }
+    .editor-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.5rem 0.9rem; background: #0d1117;
+      border-bottom: 1px solid var(--border);
+    }
+    .editor-lang { font-size: 0.72rem; color: var(--muted); font-family: var(--font-mono); }
+    .btn-clear {
+      background: none; border: none; color: var(--muted);
+      font-size: 0.75rem; cursor: pointer; padding: 0.2rem 0.5rem;
+      border-radius: 4px; transition: color 0.15s;
+    }
+    .btn-clear:hover { color: var(--error); }
+    textarea#htmlCode {
+      width: 100%; min-height: 280px;
+      background: var(--surface2); color: #79c0ff;
+      border: none; font-family: var(--font-mono);
+      font-size: 0.82rem; line-height: 1.6;
+      padding: 1rem; resize: vertical; outline: none; tab-size: 2;
+    }
+
+    /* File Upload */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px; padding: 2.5rem 1rem;
+      text-align: center; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: var(--surface2); position: relative;
+    }
+    .drop-zone:hover, .drop-zone.dragover { border-color: var(--purple); background: #1a1530; }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .drop-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .drop-title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin-bottom: 0.3rem; }
+    .drop-sub { font-size: 0.78rem; color: var(--muted); }
+
+    .file-preview {
+      display: none; margin-top: 1rem;
+      background: #0f1f10; border: 1px solid #1a3d1a;
+      border-radius: 8px; padding: 0.8rem 1rem;
+      align-items: center; justify-content: space-between; gap: 0.5rem;
+    }
+    .file-preview.show { display: flex; }
+    .file-info { display: flex; align-items: center; gap: 0.6rem; }
+    .file-name { font-size: 0.85rem; font-weight: 600; color: var(--success); }
+    .file-size { font-size: 0.75rem; color: var(--muted); }
+    .btn-remove {
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); font-size: 0.75rem;
+      padding: 0.25rem 0.6rem; border-radius: 5px; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-remove:hover { border-color: var(--error); color: var(--error); }
+
+    .file-note {
+      font-size: 0.75rem; color: var(--muted);
+      margin-top: 0.75rem; padding: 0.6rem 0.8rem;
+      background: var(--surface2); border-radius: 7px;
+      border-left: 3px solid var(--warning);
+    }
+
+    /* Deploy Button */
+    .deploy-btn {
+      width: 100%; max-width: 720px; padding: 0.9rem;
+      background: var(--purple); color: #fff;
+      font-weight: 700; font-size: 0.95rem;
+      border: none; border-radius: 10px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .deploy-btn:hover { background: var(--purple-dim); }
+    .deploy-btn:active { transform: scale(0.99); }
+    .deploy-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
+
+    /* Log */
+    #logBox {
+      display: none; width: 100%; max-width: 720px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; margin-top: 1rem; overflow: hidden;
+    }
+    .log-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.7rem 1rem; background: #0d1117;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem; color: var(--muted);
+    }
+    #logContent {
+      padding: 1rem; font-family: var(--font-mono);
+      font-size: 0.8rem; line-height: 1.8;
+      max-height: 280px; overflow-y: auto;
+    }
+    .log-line { display: flex; align-items: flex-start; gap: 0.5rem; }
+    .log-time { color: var(--muted); flex-shrink: 0; }
+    .log-ok { color: var(--success); }
+    .log-err { color: var(--error); }
+    .log-info { color: var(--purple); }
+    .log-warn { color: var(--warning); }
+
+    /* Result */
+    #resultBox {
+      display: none; width: 100%; max-width: 720px;
+      background: #0f1f10; border: 1px solid #1a3d1a;
+      border-radius: 12px; padding: 1.2rem 1.5rem; margin-top: 1rem;
+    }
+    .result-title { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--success); margin-bottom: 0.8rem; }
+    .result-url {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.7rem 1rem;
+      font-family: var(--font-mono); font-size: 0.85rem; color: #79c0ff;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; word-break: break-all;
+    }
+    .btn-copy {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-size: 0.75rem; padding: 0.3rem 0.7rem;
+      border-radius: 6px; cursor: pointer; flex-shrink: 0; transition: background 0.15s;
+    }
+    .btn-copy:hover { background: var(--border); }
+    .result-note { font-size: 0.78rem; color: var(--muted); margin-top: 0.8rem; }
+    .btn-open {
+      display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.8rem;
+      background: var(--purple); color: #fff; font-weight: 600; font-size: 0.82rem;
+      padding: 0.5rem 1rem; border-radius: 7px; text-decoration: none; transition: background 0.15s;
+    }
+    .btn-open:hover { background: var(--purple-dim); }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 540px) { .input-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="#0d1117"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg></div>
+      <h1>GitHub Pages Deployer</h1>
+    </div>
+    <p class="tagline">Paste atau upload HTML → Deploy → Live di GitHub Pages</p>
+  </header>
+
+  <!-- Auth Card -->
+  <div class="card">
+    <div class="card-title" style="justify-content: space-between;">
+      <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:5px"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6M15.5 7.5l3 3"/></svg>GitHub Auth</span>
+      <button onclick="saveToFile()" style="background:var(--purple);border:none;color:#fff;font-size:0.72rem;font-weight:600;padding:0.25rem 0.7rem;border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Simpan ke File</button>
+    </div>
+    <div class="input-row">
+      <div class="field">
+        <label for="ghToken">Personal Access Token</label>
+        <div class="token-wrap">
+          <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" />
+          <button class="btn-eye" onclick="toggleToken()" title="Tampilkan/sembunyikan"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <p class="input-hint">
+          Buat di <a href="https://github.com/settings/tokens/new?scopes=repo&description=Pages+Deployer" target="_blank">GitHub → Settings → Tokens</a><br>
+          Centang scope: <strong>repo</strong>
+        </p>
+      </div>
+      <div class="field">
+        <label for="ghUsername">Username GitHub</label>
+        <input type="text" id="ghUsername" placeholder="username-kamu" />
+        <p class="input-hint">Username GitHub kamu (bukan email)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Repo Card -->
+  <div class="card">
+    <div class="card-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:5px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Repository</div>
+    <div class="input-row">
+      <div class="field">
+        <label for="repoName">Nama Repo</label>
+        <input type="text" id="repoName" placeholder="website-saya" />
+        <p class="input-hint">Repo baru akan dibuat otomatis jika belum ada</p>
+      </div>
+      <div class="field">
+        <label for="commitMsg">Pesan Commit</label>
+        <input type="text" id="commitMsg" placeholder="Update website" value="Deploy via GitHub Pages Deployer" />
+        <p class="input-hint">Deskripsi perubahan</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Source Card -->
+  <div class="card">
+    <div class="card-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:5px"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>Sumber File</div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('paste')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:4px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Paste HTML</button>
+      <button class="tab-btn" onclick="switchTab('upload')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:4px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Upload File</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-paste">
+      <div class="editor-wrap">
+        <div class="editor-header">
+          <span class="editor-lang">html</span>
+          <button class="btn-clear" onclick="clearCode()">Bersihkan</button>
+        </div>
+        <textarea id="htmlCode" spellcheck="false" placeholder="<!DOCTYPE html>
+<html>
+<head>
+  <title>Halaman Saya</title>
+</head>
+<body>
+  <h1>Hello World!</h1>
+</body>
+</html>"></textarea>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-upload">
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".html,.htm" onchange="handleFileSelect(this.files[0])" />
+        <div class="drop-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="drop-title">Klik atau drag file ke sini</div>
+        <div class="drop-sub">Format: .html atau .htm saja</div>
+      </div>
+      <div class="file-preview" id="filePreview">
+        <div class="file-info">
+          <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+          <div>
+            <div class="file-name" id="fileName">—</div>
+            <div class="file-size" id="fileSize">—</div>
+          </div>
+        </div>
+        <button class="btn-remove" onclick="removeFile()">Hapus</button>
+      </div>
+      <div class="file-note">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> File akan di-deploy sebagai <code>index.html</code> di root repo.
+        GitHub Pages hanya support file tunggal di sini. Untuk multi-file, pakai GitHub Desktop.
+      </div>
+    </div>
+  </div>
+
+  <button class="deploy-btn" id="deployBtn" onclick="deploy()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg> Deploy ke GitHub Pages
+  </button>
+
+  <div id="logBox">
+    <div class="log-header">
+      <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:5px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Deploy Log</span>
+      <span id="logStatus">—</span>
+    </div>
+    <div id="logContent"></div>
+  </div>
+
+  <div id="resultBox">
+    <div class="result-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Deploy Berhasil!</div>
+    <div class="result-url">
+      <span id="deployUrl">—</span>
+      <button class="btn-copy" onclick="copyUrl()">Salin</button>
+    </div>
+    <p class="result-note">⏳ GitHub Pages butuh 1–2 menit untuk aktif pertama kali. Refresh jika belum muncul.</p>
+    <a id="openBtn" href="#" target="_blank" class="btn-open"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Buka Site</a>
+  </div>
+
+  <script>
+    // ══════════════════════════════════════
+    //  SIMPAN KREDENSIAL DI SINI
+    // ══════════════════════════════════════
+    const SAVED_TOKEN    = "";   // ← paste token kamu
+    const SAVED_USERNAME = "";   // ← isi username GitHub
+    // ══════════════════════════════════════
+
+    let currentTab = 'paste';
+    let uploadedFile = null;
+
+    // Load saved credentials on startup
+    window.addEventListener('DOMContentLoaded', () => {
+      if (SAVED_TOKEN)    document.getElementById('ghToken').value    = SAVED_TOKEN;
+      if (SAVED_USERNAME) document.getElementById('ghUsername').value = SAVED_USERNAME;
+    });
+
+    function saveToFile() {
+      const token    = document.getElementById('ghToken').value.trim();
+      const username = document.getElementById('ghUsername').value.trim();
+      if (!token && !username) { alert('Isi Token dan Username dulu!'); return; }
+
+      // Ambil source HTML file ini, ganti nilai SAVED_TOKEN & SAVED_USERNAME
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', location.href, false); // sync baca diri sendiri
+      try { xhr.send(); } catch(e) {
+        // Jika tidak bisa baca diri sendiri (file:// atau sandbox), fallback manual
+        alert('Tidak bisa auto-save di environment ini.\n\nEdit file HTML-nya manual:\nSAVED_TOKEN = "' + token + '"\nSAVED_USERNAME = "' + username + '"');
+        return;
+      }
+      let src = xhr.responseText;
+      src = src.replace(/const SAVED_TOKEN\s*=\s*"[^"]*"/, `const SAVED_TOKEN    = "${token}"`);
+      src = src.replace(/const SAVED_USERNAME\s*=\s*"[^"]*"/, `const SAVED_USERNAME = "${username}"`);
+
+      const blob = new Blob([src], { type: 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'github-pages-deployer.html';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach((b, i) => {
+        b.classList.toggle('active', (i === 0 && tab === 'paste') || (i === 1 && tab === 'upload'));
+      });
+      document.getElementById('tab-paste').classList.toggle('active', tab === 'paste');
+      document.getElementById('tab-upload').classList.toggle('active', tab === 'upload');
+    }
+
+    function toggleToken() {
+      const inp = document.getElementById('ghToken');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    function handleFileSelect(file) {
+      if (!file) return;
+      uploadedFile = file;
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = formatSize(file.size);
+      document.getElementById('filePreview').classList.add('show');
+    }
+
+    function removeFile() {
+      uploadedFile = null;
+      document.getElementById('fileInput').value = '';
+      document.getElementById('filePreview').classList.remove('show');
+    }
+
+    function formatSize(b) {
+      if (b < 1024) return b + ' B';
+      if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+      return (b/1024/1024).toFixed(1) + ' MB';
+    }
+
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) handleFileSelect(file);
+    });
+
+    function log(msg, type = 'info') {
+      document.getElementById('logBox').style.display = 'block';
+      const content = document.getElementById('logContent');
+      const t = new Date().toTimeString().slice(0, 8);
+      const cls = { info: 'log-info', ok: 'log-ok', err: 'log-err', warn: 'log-warn' }[type];
+      const icon = {
+        info: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+        ok:   '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+        err:  '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+        warn: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+      }[type];
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.innerHTML = `<span class="log-time">${t}</span><span class="${cls}">${icon} ${msg}</span>`;
+      content.appendChild(line);
+      content.scrollTop = content.scrollHeight;
+    }
+
+    function setStatus(txt) { document.getElementById('logStatus').textContent = txt; }
+    function clearCode() { document.getElementById('htmlCode').value = ''; }
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function copyUrl() {
+      navigator.clipboard.writeText(document.getElementById('deployUrl').textContent).then(() => {
+        const btn = document.querySelector('.btn-copy');
+        btn.textContent = 'Disalin!';
+        setTimeout(() => btn.textContent = 'Salin', 1500);
+      });
+    }
+
+    async function getHtmlContent() {
+      if (currentTab === 'upload') {
+        if (!uploadedFile) throw new Error('Belum ada file yang dipilih!');
+        return await uploadedFile.text();
+      } else {
+        const html = document.getElementById('htmlCode').value;
+        if (!html.trim()) throw new Error('HTML code tidak boleh kosong!');
+        return html;
+      }
+    }
+
+    async function ghFetch(token, path, method = 'GET', body = null) {
+      const opts = {
+        method,
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        }
+      };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(`https://api.github.com${path}`, opts);
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    }
+
+    async function deploy() {
+      const token    = document.getElementById('ghToken').value.trim();
+      const username = document.getElementById('ghUsername').value.trim();
+      const repoName = document.getElementById('repoName').value.trim();
+      const commitMsg = document.getElementById('commitMsg').value.trim() || 'Deploy via GitHub Pages Deployer';
+
+      document.getElementById('logContent').innerHTML = '';
+      document.getElementById('logBox').style.display = 'none';
+      document.getElementById('resultBox').style.display = 'none';
+
+      if (!token) { log('Personal Access Token belum diisi!', 'err'); return; }
+      if (!username) { log('Username GitHub belum diisi!', 'err'); return; }
+      if (!repoName) { log('Nama repo belum diisi!', 'err'); return; }
+
+      const btn = document.getElementById('deployBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Sedang Deploy...';
+
+      try {
+        // 1. Ambil HTML content
+        let htmlContent;
+        try { htmlContent = await getHtmlContent(); }
+        catch(e) { log(e.message, 'err'); return; }
+
+        // 2. Cek/buat repo
+        log(`Mengecek repo: ${username}/${repoName}...`, 'info');
+        setStatus('Checking repo...');
+        let { ok: repoExists, data: repoData } = await ghFetch(token, `/repos/${username}/${repoName}`);
+
+        if (!repoExists) {
+          log('Repo belum ada, membuat repo baru...', 'info');
+          setStatus('Creating repo...');
+          const { ok, data } = await ghFetch(token, '/user/repos', 'POST', {
+            name: repoName,
+            description: 'Deployed via GitHub Pages Deployer',
+            private: false,
+            auto_init: true
+          });
+          if (!ok) {
+            log(`Gagal buat repo: ${data.message || 'unknown error'}`, 'err'); return;
+          }
+          log(`Repo dibuat: ${data.full_name}`, 'ok');
+          repoData = data;
+          await sleep(2000); // tunggu repo siap
+        } else {
+          log(`Repo ditemukan: ${repoData.full_name}`, 'ok');
+        }
+
+        // 3. Cek apakah index.html sudah ada (untuk dapat SHA)
+        log('Mengupload index.html...', 'info');
+        setStatus('Uploading...');
+        const { data: existingFile } = await ghFetch(token, `/repos/${username}/${repoName}/contents/index.html`);
+        const fileSha = existingFile?.sha || null;
+
+        // 4. Upload index.html (base64)
+        const base64Content = btoa(unescape(encodeURIComponent(htmlContent)));
+        const uploadBody = {
+          message: commitMsg,
+          content: base64Content,
+          branch: repoData.default_branch || 'main'
+        };
+        if (fileSha) uploadBody.sha = fileSha;
+
+        const { ok: uploadOk, data: uploadData } = await ghFetch(
+          token,
+          `/repos/${username}/${repoName}/contents/index.html`,
+          'PUT',
+          uploadBody
+        );
+
+        if (!uploadOk) {
+          log(`Gagal upload: ${uploadData.message || 'unknown error'}`, 'err'); return;
+        }
+        log('index.html berhasil diupload!', 'ok');
+
+        // 5. Enable GitHub Pages
+        log('Mengaktifkan GitHub Pages...', 'info');
+        setStatus('Enabling Pages...');
+
+        const branch = repoData.default_branch || 'main';
+        const { ok: pagesOk, status: pagesStatus, data: pagesData } = await ghFetch(
+          token,
+          `/repos/${username}/${repoName}/pages`,
+          'POST',
+          { source: { branch, path: '/' } }
+        );
+
+        // 409 = sudah aktif sebelumnya, itu OK
+        if (pagesOk || pagesStatus === 409) {
+          log('GitHub Pages aktif!', 'ok');
+        } else if (pagesStatus === 422) {
+          log('GitHub Pages sudah aktif sebelumnya.', 'warn');
+        } else {
+          log(`Peringatan Pages: ${pagesData.message || pagesStatus}`, 'warn');
+        }
+
+        // 6. Tampilkan URL
+        const pageUrl = `https://${username}.github.io/${repoName}/`;
+        log(`URL: ${pageUrl}`, 'ok');
+        log('Selesai! Tunggu 1-2 menit agar site aktif.', 'ok');
+        setStatus('✓ Berhasil');
+
+        document.getElementById('deployUrl').textContent = pageUrl;
+        document.getElementById('openBtn').href = pageUrl;
+        document.getElementById('resultBox').style.display = 'block';
+
+      } catch (err) {
+        log(`Error: ${err.message}`, 'err');
+        setStatus('Error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg> Deploy ke GitHub Pages';
+      }
+    }
+
+    document.getElementById('htmlCode').addEventListener('keydown', function(e) {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const s = this.selectionStart;
+        this.value = this.value.substring(0, s) + '  ' + this.value.substring(this.selectionEnd);
+        this.selectionStart = this.selectionEnd = s + 2;
+      }
+    });
+  </script>
+</body>
+</html>
